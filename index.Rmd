@@ -5,7 +5,7 @@ date: "`r Sys.Date()`"
 site: bookdown::bookdown_site
 ---
 
-# Preface
+# Intro
 
 This document was created to display a portfolio of assignments generated from the Spring 2022 semester course Environmental Data Science (ESS 580A7) at Colorado State University.  
 
