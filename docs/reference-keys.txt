@@ -49,3 +49,12 @@ question-4-panel-one-way-to-leverage-multiple-time-series-is-to-group-all-data-i
 question-5-soybeans-download-nass-data-on-soybean-yields-and-explore-either-a-time-series-relationship-for-a-given-county-the-cross-sectional-relationship-for-a-given-year-or-a-panel-across-all-counties-and-years.
 bonus-find-a-package-to-make-a-county-map-of-iowa-displaying-some-sort-of-information-about-yields-or-weather.-interpret-your-map.
 bonus-2-challenge-question---map-trends-in-corn-yields-by-county-across-iowa.-interpret-your-map.
+methods
+sitedescription
+data-acquisition-plotting-tests
+data-download
+static-data-plotter
+interactive-data-plotter
+assignment.
+dygraph-example.
+poudre-paragraph

@@ -1,0 +1,272 @@
+---
+title: "Hayman Fire Recovery"
+author: "Laney Gordon"
+date: "`r format(Sys.Date(), '%B %d, %Y')`" 
+output: html_document
+---
+
+```{r setup, warning=F,message=F}
+library(tidyverse)
+library(tidyr)
+library(ggthemes)
+library(lubridate)
+library(ggpubr) 
+
+# Now that we have learned how to munge (manipulate) data
+# and plot it, we will work on using these skills in new ways
+
+knitr::opts_knit$set(root.dir='..')
+```
+
+
+```{r dataread, warning=F,message=F}
+####-----Reading in Data and Stacking it ----- ####
+#Reading in files
+files <- list.files('../data',full.names=T)
+
+
+#Read in individual data files
+ndmi <- read_csv(files[1]) %>% 
+  rename(burned=2,unburned=3) %>%
+  mutate(data='ndmi')
+
+
+ndsi <- read_csv(files[2]) %>% 
+  rename(burned=2,unburned=3) %>%
+  mutate(data='ndsi')
+
+ndvi <- read_csv(files[3])%>% 
+  rename(burned=2,unburned=3) %>%
+  mutate(data='ndvi')
+
+# Stack as a tidy dataset
+full_long <- rbind(ndvi,ndmi,ndsi) %>%
+  gather(key='site',value='value',-DateTime,-data) %>%
+  filter(!is.na(value))
+
+
+```
+
+
+
+
+## Question 1) 
+
+What is the correlation between NDVI and NDMI? - here I want you to
+convert the full_long dataset in to a wide dataset using the 
+function "spread" and then make a plot that shows the correlation s a
+function of if the site was burned or not (x axis should be ndmi)
+You should exclude winter months and focus on summer months
+
+```{r}
+
+full_wide <- spread(data=full_long,key='data',value='value') %>%
+  filter_if(is.numeric,all_vars(!is.na(.))) %>%
+  mutate(month = month(DateTime),
+         year = year(DateTime))
+
+summer_only <- filter(full_wide,month %in% c(6,7,8,9))
+
+ggplot(summer_only,aes(x=ndmi,y=ndvi,color=site)) + 
+  geom_point() + 
+  theme_few() + 
+  scale_color_few() + 
+  theme(legend.position=c(0.8,0.8))
+
+```
+
+## Question 2 
+
+2) What is the correlation between average NDSI (normalized
+ snow index) for January - April and average NDVI for June-August?
+In other words, does the previous year's snow cover influence vegetation
+ growth for the following summer?
+
+
+```{r, warning=F, message=F} 
+
+ndvi_annual <- full_wide[c(1,2,5,6,7)] %>% 
+  filter(month %in% c(6,7,8)) %>%
+  group_by(site,year) %>%
+  summarize(mean_NDVI=mean(ndvi))
+
+ndsi_annual <- full_wide[c(1,2,4,6,7)] %>% 
+  filter(month %in% c(1,2,3,4)) %>%
+  group_by(site,year) %>%
+  summarize(mean_NDSI=mean(ndsi))
+
+combinedata <- inner_join(ndvi_annual, ndsi_annual) 
+
+cor(combinedata$mean_NDSI, combinedata$mean_NDVI)
+
+```
+The correlation coefficient for this data is 0.18, which is close to 0, telling us there is a small correlation between NDVI and NDSI
+
+## Q3
+
+How is the snow effect from question 2 different between pre- and post-burn
+and burned and unburned? 
+
+```{r, warning =F, message=F}
+## Pre- and Post- burn
+preburn<- c(1984:2001)
+postburn <- (2003:2019)
+
+## Preburn
+#Preburn annual ndsi
+preburn_annualndsi<- full_wide[c(1,2,4,6,7)] %>% 
+  filter(month %in% c(1,2,3,4)) %>%
+  filter(year %in% preburn)%>%
+  group_by(site,year) %>%
+  summarize(ndsi_preburn_avg=mean(ndsi))
+
+#Preburn annual ndvi
+preburn_annualndvi<- full_wide[c(1,2,5,6,7)] %>% 
+  filter(month %in% c(6,7,8)) %>%
+  filter(year %in% preburn)%>%
+  group_by(site,year) %>%
+  summarize(ndvi_preburn_avg=mean(ndvi))
+
+#combined preburn
+combinedPRE<-inner_join(preburn_annualndsi, preburn_annualndvi) 
+
+#correlation preburn
+cor(combinedPRE$ndsi_preburn_avg, combinedPRE$ndvi_preburn_avg)
+
+
+## Postburn
+#Postburn annual ndsi
+postburn_annualndsi<- full_wide[c(1,2,4,6,7)] %>% 
+  filter(month %in% c(1,2,3,4)) %>%
+  filter(year %in% postburn)%>%
+  group_by(site,year) %>%
+  summarize(ndsi_postburn_avg=mean(ndsi))
+
+#Postburn annual ndvi
+postburn_annualndvi<- full_wide[c(1,2,5,6,7)] %>% 
+  filter(month %in% c(6,7,8)) %>%
+  filter(year %in% postburn)%>%
+  group_by(site,year) %>%
+  summarize(ndvi_postburn_avg=mean(ndvi))
+
+#combined postburn
+combinedPOST<-inner_join(postburn_annualndsi, postburn_annualndvi) 
+
+#correlation postburn
+cor(combinedPOST$ndsi_postburn_avg, combinedPOST$ndvi_postburn_avg)
+
+
+## Burned vs Unburned
+#snow effect average for burned
+ndsi_burned_avg<- full_wide[c(1,2,4,6,7)] %>% 
+  filter(month %in% c(1,2,3,4)) %>%
+  filter(site %in% "burned")%>%
+  group_by(site,year) %>%
+  summarize(ndsi_burned_avg=mean(ndsi))
+
+#vegetation effect average for burned
+ndvi_burned_avg<- full_wide[c(1,2,5,6,7)] %>% 
+  filter(month %in% c(6,7,8)) %>%
+  filter(site %in% "burned")%>%
+  group_by(site,year) %>%
+  summarize(ndvi_burned_avg=mean(ndvi))
+
+#snow effect average for unburned
+ndsi_unburned_avg<- full_wide[c(1,2,4,6,7)] %>% 
+  filter(month %in% c(1,2,3,4)) %>%
+  filter(site %in% "unburned")%>%
+  group_by(site,year) %>%
+  summarize(ndsi_unburned_avg=mean(ndsi))
+
+#vegetation effect average for unburned
+ndvi_unburned_avg<- full_wide[c(1,2,5,6,7)] %>% 
+  filter(month %in% c(6,7,8)) %>%
+  filter(site %in% "unburned")%>%
+  group_by(site,year) %>%
+  summarize(ndvi_unburned_avg=mean(ndvi))
+
+
+#combining data for burned
+combined_burned<-inner_join(ndvi_burned_avg, ndsi_burned_avg)
+
+#combining data for unburned
+combined_unburned<-inner_join(ndvi_unburned_avg, ndsi_unburned_avg)
+
+#correlation for burned data
+cor(combined_burned$ndvi_burned_avg, combined_burned$ndsi_burned_avg) 
+
+#correlation for unburned data
+cor(combined_unburned$ndvi_unburned_avg, combined_unburned$ndsi_unburned_avg) 
+
+#graphing the data
+
+Preburngraph<-ggplot(combinedPRE, aes(x=ndsi_preburn_avg, y=ndvi_preburn_avg)) +
+  geom_point() + 
+  theme_few() +
+  labs(x= "Average NDSI", y="Average NDVI")
+  scale_color_few() 
+
+Postburngraph<-ggplot(combinedPOST, aes(x=ndsi_postburn_avg, y=ndvi_postburn_avg)) +
+  geom_point() +
+  theme_few() +
+  labs(x= "Average NDSI", y="Average NDVI")
+  scale_color_few() 
+
+Burnedgraph<- ggplot(combined_burned, aes(x=ndsi_burned_avg, y=ndvi_burned_avg)) +
+  geom_point() +
+  theme_few() +
+  labs(x= "Average NDSI", y="Average NDVI")
+  scale_color_few() 
+
+Unburnedgraph<- ggplot(combined_unburned, aes(x=ndsi_unburned_avg, y=ndvi_unburned_avg)) +
+  geom_point() +
+  theme_few() +
+  labs(x= "Average NDSI", y="Average NDVI")
+  scale_color_few() 
+
+#Plot of data in a single frame
+Plot<-ggarrange(Preburngraph, Postburngraph, Burnedgraph, Unburnedgraph,
+                labels = c("Pre-burned", "Post-burned", "Burned", "Unburned"),
+                ncol = 2, nrow = 2) 
+Plot 
+```
+It appears that the correlation for postburn is around 0.24 and the correlation for preburn is 0.09, the burned correlation coefficient is about 0.09 and unburned is -0.03. These values tell us that the snow effect across all 4 scenarios have a low correlation. We also see this in our graph, which shows scattered values with some trouble defining a clear pattern. 
+
+## Question 4
+
+What month is the greenest month on average? 
+
+```{r}
+ndvi_avg_month<- full_wide[c("ndvi", "month")] %>% 
+  group_by(month) %>%
+  summarize(ndvi_avg_month=mean(ndvi))%>% 
+filter(ndvi_avg_month== max(ndvi_avg_month))
+
+ndvi_avg_month
+```
+
+It appears that the month with the highest vegetation (ndvi) on average occurs in month 8, which is August. 
+
+
+## Question 5) 
+
+What month is the snowiest on average?
+
+```{r}
+ndsi_avg_month<- full_wide[c("ndsi", "month")] %>% 
+  group_by(month) %>%
+  summarize(ndsi_avg_month=mean(ndsi))%>% 
+filter(ndsi_avg_month== max(ndsi_avg_month))
+
+ndsi_avg_month
+```
+The month with the highest amount of snow (ndsi) on average occurs in month 1, which is January. 
+
+## Bonus Question: Redo all problems with `spread` and `gather` using modern tidyverse syntax. 
+
+
+## Bonus Question: Use Climage Engine to pull the same data for the assignment, but updated with 2020/2021 data.
+
+
+
+
