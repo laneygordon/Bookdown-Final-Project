@@ -3,6 +3,13 @@ title: "Hayman Fire Recovery"
 author: "Laney Gordon"
 date: "`r format(Sys.Date(), '%B %d, %Y')`" 
 output: html_document
+knit: (function(input, ...) {
+    rmarkdown::render(
+      input,
+      output_file = 'index',
+      output_dir='../'
+    )
+  })
 ---
 
 ```{r setup, warning=F,message=F}
@@ -22,27 +29,29 @@ knitr::opts_knit$set(root.dir='..')
 ```{r dataread, warning=F,message=F}
 ####-----Reading in Data and Stacking it ----- ####
 #Reading in files
-files <- list.files('../data',full.names=T)
 
+files <- list.files('data/Hayman fire',full.names=T) 
 
 #Read in individual data files
+
 ndmi <- read_csv(files[1]) %>% 
   rename(burned=2,unburned=3) %>%
-  mutate(data='ndmi')
+  mutate(data='ndmi') 
 
 
 ndsi <- read_csv(files[2]) %>% 
   rename(burned=2,unburned=3) %>%
   mutate(data='ndsi')
 
-ndvi <- read_csv(files[3])%>% 
+
+ndvi <- read_csv(files[3]) %>% 
   rename(burned=2,unburned=3) %>%
-  mutate(data='ndvi')
+  mutate(data='ndvi') 
 
 # Stack as a tidy dataset
 full_long <- rbind(ndvi,ndmi,ndsi) %>%
   gather(key='site',value='value',-DateTime,-data) %>%
-  filter(!is.na(value))
+  filter(!is.na(value)) 
 
 
 ```
