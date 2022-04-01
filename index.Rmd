@@ -9,18 +9,4 @@ site: bookdown::bookdown_site
 
 This document was created to display a portfolio of assignments generated from the Spring 2022 semester course Environmental Data Science (ESS 580A7) at Colorado State University.  
 
-# Chapter 1 - Hayman Fire Recovery
 
-import project
-
-# Chapter 2 - Snow Data 
-
-function iterations
-
-# Chapter 3 - Spatial Analyses
-
-learning sf and spatial operations in R for lakes
-
-# Chapter 4 - Linear Regressions 
-
-weather vs corn yield 
